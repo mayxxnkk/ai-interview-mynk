@@ -11,6 +11,7 @@ const Page = async ({ params }: RouteParams) => {
     if (!user) redirect("/sign-in");
 
     let interview: Interview | null = null;
+    let actualInterviewId = id;
 
     // Try Firestore first
     try {
@@ -19,12 +20,29 @@ const Page = async ({ params }: RouteParams) => {
         if (interviewDoc.exists) {
             interview = { id: interviewDoc.id, ...interviewDoc.data() } as Interview;
         }
-    } catch (e) {
-        console.log('Firestore error, trying dummy interviews');
-    }
 
-    // Fall back to dummy interviews
-    if (!interview) {
+        // If not found in Firestore, check if it's a dummy interview
+        if (!interview) {
+            const dummy = dummyInterviews.find((i) => i.id === id);
+            if (dummy) {
+                // Save a copy to Firestore for this user so it appears in "Your Interviews"
+                const newDoc = await db.collection("interviews").add({
+                    role: dummy.role,
+                    type: dummy.type,
+                    level: dummy.level,
+                    techstack: dummy.techstack,
+                    questions: dummy.questions,
+                    userId: user.id,
+                    finalized: true,
+                    createdAt: new Date().toISOString(),
+                });
+                actualInterviewId = newDoc.id;
+                interview = { ...dummy, id: newDoc.id, userId: user.id };
+            }
+        }
+    } catch (e) {
+        console.log('Firestore error, using dummy data');
+        // Fall back to dummy without saving
         interview = dummyInterviews.find((i) => i.id === id) || null;
     }
 
@@ -48,7 +66,7 @@ const Page = async ({ params }: RouteParams) => {
             <InterviewAgent
                 userName={user.name}
                 userId={user.id}
-                interviewId={id}
+                interviewId={actualInterviewId}
                 type="interview"
                 questions={interview.questions}
             />
