@@ -49,11 +49,11 @@ export async function signIn(params: SignInParams) {
         }
         await setSessionCookie(idToken);
         return { success: true, message: 'Signed in successfully.' };
-    } catch (e) {
-        console.log(e);
+    } catch (e: any) {
+        console.error('SignIn error:', e?.message || e?.code || JSON.stringify(e));
         return {
             success: false,
-            message: 'There was an error signing in. Please try again.'
+            message: `Sign in failed: ${e?.message || e?.code || 'Unknown error'}`
         }
     }
 }

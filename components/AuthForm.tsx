@@ -53,7 +53,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 const idToken = await userCredentials.user.getIdToken();
                 if (!idToken) { toast.error("Sign in failed"); return; }
                 const result = await signIn({ email, idToken });
-                if (!result?.success) { toast.error(result?.message); return; }
+                if (!result?.success) { toast.error(result?.message || "Sign in failed"); return; }
                 toast.success("Signed in successfully");
                 // Small delay to ensure session cookie is written before redirect
                 await new Promise((resolve) => setTimeout(resolve, 500));
