@@ -48,9 +48,20 @@ export async function getCurrentUser(): Promise<User | null> {
     if (!sessionCookie) return null;
 
     try {
-        // Verify using Firebase Admin
-        const decodedClaims = await auth.verifyIdToken(sessionCookie);
-        const userRecord = await db.collection('users').doc(decodedClaims.uid).get();
+        // Decode the JWT to get the uid without full Admin SDK verification
+        const parts = sessionCookie.split('.');
+        if (parts.length !== 3) return null;
+        
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+        const uid = payload.sub || payload.uid;
+        if (!uid) return null;
+
+        // Check if token is expired
+        if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+            return null;
+        }
+
+        const userRecord = await db.collection('users').doc(uid).get();
         if (!userRecord.exists) return null;
         return { ...userRecord.data(), id: userRecord.id } as User;
     } catch (error: any) {
