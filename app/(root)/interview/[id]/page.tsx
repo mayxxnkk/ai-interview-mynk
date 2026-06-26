@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import InterviewAgent from "@/components/InterviewAgent";
 import { getCurrentUser } from "@/lib/actions/auth_action";
-import { db } from "@/firebase/admin";
 import { dummyInterviews } from "@/constants";
 
 const Page = async ({ params }: RouteParams) => {
@@ -11,14 +10,21 @@ const Page = async ({ params }: RouteParams) => {
     const user = await getCurrentUser();
     if (!user) redirect("/sign-in");
 
-    // Try Firestore first, fall back to dummy data
     let interview: Interview | null = null;
 
-    const interviewDoc = await db.collection("interviews").doc(id).get();
-    if (interviewDoc.exists) {
-        interview = { id: interviewDoc.id, ...interviewDoc.data() } as Interview;
-    } else {
-        // Fall back to dummy interviews
+    // Try Firestore first
+    try {
+        const { db } = await import('@/firebase/admin');
+        const interviewDoc = await db.collection("interviews").doc(id).get();
+        if (interviewDoc.exists) {
+            interview = { id: interviewDoc.id, ...interviewDoc.data() } as Interview;
+        }
+    } catch (e) {
+        console.log('Firestore error, trying dummy interviews');
+    }
+
+    // Fall back to dummy interviews
+    if (!interview) {
         interview = dummyInterviews.find((i) => i.id === id) || null;
     }
 
@@ -26,7 +32,6 @@ const Page = async ({ params }: RouteParams) => {
 
     return (
         <div className="relative flex flex-col gap-8">
-            {/* Close button */}
             <Link
                 href="/"
                 className="absolute top-0 right-0 flex items-center justify-center w-10 h-10 rounded-full bg-dark-200 border border-light-600 text-light-100 hover:bg-light-600 transition-colors text-xl font-bold"
