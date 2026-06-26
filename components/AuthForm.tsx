@@ -52,8 +52,11 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 const userCredentials = await signInWithEmailAndPassword(auth, email, Password);
                 const idToken = await userCredentials.user.getIdToken();
                 if (!idToken) { toast.error("Sign in failed"); return; }
-                await signIn({ email, idToken });
+                const result = await signIn({ email, idToken });
+                if (!result?.success) { toast.error(result?.message); return; }
                 toast.success("Signed in successfully");
+                // Small delay to ensure session cookie is written before redirect
+                await new Promise((resolve) => setTimeout(resolve, 500));
                 window.location.href = "/";
             }
         } catch (error: any) {
