@@ -1,6 +1,5 @@
 'use server';
 
-import { db } from '@/firebase/admin';
 import Groq from 'groq-sdk';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -58,17 +57,29 @@ Be constructive, specific, and encouraging. Return only valid JSON.`,
             createdAt: new Date().toISOString(),
         };
 
-        let docRef;
-        if (feedbackId) {
-            await db.collection('feedback').doc(feedbackId).set(feedbackData);
-            docRef = { id: feedbackId };
-        } else {
-            docRef = await db.collection('feedback').add(feedbackData);
+        // Try to save to Firestore
+        let savedFeedbackId = feedbackId || `feedback_${Date.now()}`;
+        try {
+            const { db } = await import('@/firebase/admin');
+            if (feedbackId) {
+                await db.collection('feedback').doc(feedbackId).set(feedbackData);
+            } else {
+                const docRef = await db.collection('feedback').add(feedbackData);
+                savedFeedbackId = docRef.id;
+            }
+        } catch (dbError: any) {
+            console.error('Firestore save error (non-fatal):', dbError?.message);
+            // Continue - we still have the feedback data
         }
 
-        return { success: true, feedbackId: docRef.id };
-    } catch (error) {
-        console.error('Error generating feedback:', error);
+        // Return feedback data directly so it can be shown even if DB failed
+        return { 
+            success: true, 
+            feedbackId: savedFeedbackId,
+            feedbackData 
+        };
+    } catch (error: any) {
+        console.error('Error generating feedback:', error?.message || error);
         return { success: false, error: 'Failed to generate feedback.' };
     }
 }

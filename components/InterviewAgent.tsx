@@ -75,7 +75,6 @@ const InterviewAgent = ({ userName, userId, interviewId, feedbackId, type, quest
         const handleFinished = async () => {
             if (callStatus !== CallStatus.FINISHED) return;
 
-            // Only generate feedback for real interviews with a transcript
             if (type === "interview" && interviewId && messages.length > 0) {
                 setIsGeneratingFeedback(true);
                 try {
@@ -86,6 +85,13 @@ const InterviewAgent = ({ userName, userId, interviewId, feedbackId, type, quest
                         feedbackId,
                     });
                     if (result.success) {
+                        // Store feedback in sessionStorage as fallback
+                        if (result.feedbackData) {
+                            sessionStorage.setItem(
+                                `feedback_${interviewId}`,
+                                JSON.stringify({ ...result.feedbackData, id: result.feedbackId })
+                            );
+                        }
                         router.push(`/interview/${interviewId}/feedback`);
                         return;
                     }
