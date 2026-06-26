@@ -127,6 +127,7 @@ const InterviewAgent = ({ userName, userId, interviewId, feedbackId, type, quest
                         username: userName,
                         questions: formattedQuestions,
                     },
+                    firstMessage: `Hello ${userName}! I'm your AI interviewer today. Let's get started with your interview. Here are the questions I'll be asking you:\n\n${formattedQuestions}\n\nAre you ready to begin?`,
                 });
             }
         } catch (error) {

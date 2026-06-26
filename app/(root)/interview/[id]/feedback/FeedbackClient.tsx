@@ -104,7 +104,10 @@ const FeedbackClient = ({ interviewId, serverFeedback }: Props) => {
                 <Link href="/" className="btn-secondary px-6 py-3 rounded-full text-center">
                     Back to Dashboard
                 </Link>
-                <Link href={`/interview/${interviewId}`} className="btn-primary px-6 py-3 rounded-full text-center">
+                <Link 
+                    href={interviewId.startsWith('temp_') ? '/interview' : `/interview/${interviewId}`} 
+                    className="btn-primary px-6 py-3 rounded-full text-center"
+                >
                     Retake Interview
                 </Link>
             </div>
