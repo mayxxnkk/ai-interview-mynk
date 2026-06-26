@@ -1,6 +1,5 @@
 // app/api/vapi/generate/route.ts
 import { getRandomInterviewCover } from "@/lib/utils";
-import { db } from "@/firebase/admin";
 import Groq from "groq-sdk";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -13,6 +12,7 @@ export async function POST(request: Request) {
     const { type, role, level, techstack, amount, userId } = await request.json();
 
     try {
+        // Generate questions using Groq
         const completion = await groq.chat.completions.create({
             model: "llama-3.1-8b-instant",
             messages: [
@@ -34,24 +34,37 @@ Thank you!`,
             ],
         });
 
-        const questions = completion.choices[0]?.message?.content || "[]";
+        const questionsText = completion.choices[0]?.message?.content || "[]";
+        
+        // Clean up the response - extract JSON array
+        const jsonMatch = questionsText.match(/\[[\s\S]*\]/);
+        const questions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
 
         const interview = {
             role,
             type,
             level,
             techstack: String(techstack).split(","),
-            questions: JSON.parse(questions),
+            questions,
             userId,
             finalized: true,
             coverImage: getRandomInterviewCover(),
             createdAt: new Date().toISOString(),
         };
 
-        await db.collection("interviews").add(interview);
+        // Save to Firestore using dynamic import
+        try {
+            const { db } = await import('@/firebase/admin');
+            await db.collection("interviews").add(interview);
+        } catch (dbError) {
+            console.error('Firestore save error:', dbError);
+            // Still return success with the questions even if DB fails
+            return Response.json({ success: true, interview }, { status: 200 });
+        }
+
         return Response.json({ success: true }, { status: 200 });
-    } catch (error) {
-        console.log(error);
-        return Response.json({ success: false, error }, { status: 500 });
+    } catch (error: any) {
+        console.error('Generate error:', error?.message || error);
+        return Response.json({ success: false, error: error?.message || 'Failed to generate' }, { status: 500 });
     }
 }

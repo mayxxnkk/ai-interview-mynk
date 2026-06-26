@@ -59,6 +59,14 @@ const GenerateInterview = ({ userId, userName }: Props) => {
             const data = await res.json();
             if (!data.success) throw new Error("Failed to generate interview");
 
+            // If interview data returned directly (DB fallback), use it
+            if (data.interview?.questions) {
+                setInterviewId(`temp_${Date.now()}`);
+                setQuestions(data.interview.questions);
+                setStep("interview");
+                return;
+            }
+
             // Fetch the newly created interview (latest for this user)
             const snap = await fetch(`/api/interviews/latest?userId=${userId}`);
             const snapData = await snap.json();
