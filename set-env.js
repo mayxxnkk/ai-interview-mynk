@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Read the service account JSON
-const jsonPath = 'C:/Users/mynks/Downloads/ai-interview-project-mynk-firebase-adminsdk-fbsvc-8f6b6aaf8d.json';
+const jsonPath = 'C:\Users\mynks\Downloads\ai-interview-project-mynk-firebase-adminsdk-fbsvc-fa3253a4d3.json';
 const serviceAccount = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
 
 // Read current .env.local
