@@ -7,12 +7,18 @@ const ONE_WEEK = 60 * 60 * 24 * 7;
 export async function signUp(params: SignUpParams) {
     const { uid, name, email } = params;
     try {
-        const userRecord = await db.collection('users').doc(uid).get();
-        if (userRecord.exists) {
-            return { success: false, message: 'User already exists. Please sign in instead.' }
+        // Try to save to Firestore, but don't block signup if it fails
+        try {
+            const userRecord = await db.collection('users').doc(uid).get();
+            if (userRecord.exists) {
+                return { success: false, message: 'User already exists. Please sign in instead.' }
+            }
+            await db.collection('users').doc(uid).set({ name, email });
+        } catch (dbError: any) {
+            console.error("Firestore error during signup:", dbError?.message);
+            // Continue anyway - user was created in Firebase Auth
         }
-        await db.collection('users').doc(uid).set({ name, email });
-        return { success: true, message: 'User created successfully. Please sign in.' }
+        return { success: true, message: 'Account created successfully. Please sign in.' }
     } catch (e: any) {
         console.error("Error creating user:", e?.message || e);
         return { success: false, message: 'There was an error creating the account. Please try again.' }
