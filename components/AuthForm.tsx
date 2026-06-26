@@ -54,7 +54,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 if (!idToken) { toast.error("Sign in failed"); return; }
                 await signIn({ email, idToken });
                 toast.success("Signed in successfully");
-                router.push("/");
+                window.location.href = "/";
             }
         } catch (error: any) {
             toast.error(error?.message || "Something went wrong. Please try again.");
